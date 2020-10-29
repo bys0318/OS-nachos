@@ -146,7 +146,7 @@ public class PriorityScheduler extends Scheduler {
 			Lib.assertTrue(Machine.interrupt().disabled());
 			ThreadState nextThreadState = pickNextThread(); 
 			if (nextThreadState != null) {
-				//System.out.println(nextThreadState.getEffectivePriority());
+				System.out.println(nextThreadState.getEffectivePriority());
 				this.ThreadStateQueue.remove(nextThreadState); // pick the thread out
 				acquire(nextThreadState.thread);
 				return nextThreadState.thread;

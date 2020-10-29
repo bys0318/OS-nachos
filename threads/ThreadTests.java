@@ -183,4 +183,17 @@ public class ThreadTests {
         new PingTest(3).run();
         System.out.println("communicatorTest3: End!");
 	}
+
+//	test boat with at least 2 children
+	public static void boatTest()
+	{
+		System.out.println("boatTest: Start!");
+		System.out.println("2 children");
+		Boat.begin(0,2,new BoatGrader());
+		System.out.println("5 children");
+		Boat.begin(0,5,new BoatGrader());
+		System.out.println("5 children and 3 adults");
+		Boat.begin(3,5,new BoatGrader());
+		System.out.println("boatTest: End!");
+	}
 }
