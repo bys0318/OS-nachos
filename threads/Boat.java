@@ -1,76 +1,173 @@
 package nachos.threads;
 import nachos.ag.BoatGrader;
-
 public class Boat
 {
-    static BoatGrader bg;
-    
-    public static void selfTest()
-    {
-	BoatGrader b = new BoatGrader();
-	
-	System.out.println("\n ***Testing Boats with only 2 children***");
-	begin(0, 2, b);
-
-//	System.out.println("\n ***Testing Boats with 2 children, 1 adult***");
-//  	begin(1, 2, b);
-
-//  	System.out.println("\n ***Testing Boats with 3 children, 3 adults***");
-//  	begin(3, 3, b);
-    }
-
-    public static void begin( int adults, int children, BoatGrader b )
-    {
-	// Store the externally generated autograder in a class
-	// variable to be accessible by children.
-	bg = b;
-
-	// Instantiate global variables here
-	
-	// Create threads here. See section 3.4 of the Nachos for Java
-	// Walkthrough linked from the projects page.
-
-	Runnable r = new Runnable() {
-	    public void run() {
-                SampleItinerary();
-            }
-        };
-        KThread t = new KThread(r);
-        t.setName("Sample Boat Thread");
-        t.fork();
-
-    }
-
-    static void AdultItinerary()
-    {
-	bg.initializeAdult(); //Required for autograder interface. Must be the first thing called.
-	//DO NOT PUT ANYTHING ABOVE THIS LINE. 
-
-	/* This is where you should put your solutions. Make calls
-	   to the BoatGrader to show that it is synchronized. For
-	   example:
-	       bg.AdultRowToMolokai();
-	   indicates that an adult has rowed the boat across to Molokai
-	*/
-    }
-
-    static void ChildItinerary()
-    {
-	bg.initializeChild(); //Required for autograder interface. Must be the first thing called.
-	//DO NOT PUT ANYTHING ABOVE THIS LINE. 
-    }
-
-    static void SampleItinerary()
-    {
-	// Please note that this isn't a valid solution (you can't fit
-	// all of them on the boat). Please also note that you may not
-	// have a single thread calculate a solution and then just play
-	// it back at the autograder -- you will be caught.
-	System.out.println("\n ***Everyone piles on the boat and goes to Molokai***");
-	bg.AdultRowToMolokai();
-	bg.ChildRideToMolokai();
-	bg.AdultRideToMolokai();
-	bg.ChildRideToMolokai();
-    }
-    
+/*
+	All threads at Oahu will only visit O_*.
+	All threads at Molokai will only visit M_*.
+*/
+	private static BoatGrader bg;
+	private static Lock lock;
+	private static Condition finishQueue;
+//	O_*
+	private static Condition O_waitingQueue;
+	private static Condition O_adultQueue;
+	private static Condition O_childQueue;
+	private static int O_adultNum;
+	private static int O_childNum;
+	private static boolean O_initial;
+	private static boolean O_waiting;
+//	M_*
+	private static Condition M_pilotQueue;
+	private static int M_finishNum;
+	private static void AdultItinerary()
+	{
+		bg.initializeAdult();
+//	Reach Oahu
+		lock.acquire();
+		O_adultNum++;
+		if(O_waiting)
+			O_waitingQueue.wake();
+		O_adultQueue.sleep();
+		O_adultNum--;
+//	Leave Oahu
+		bg.AdultRowToMolokai();
+//	Reach Molokai
+		M_finishNum++;
+		M_pilotQueue.wake();
+		lock.release();
+		return;
+	}
+	private static void ChildItinerary()
+	{
+		bg.initializeChild();
+//	Reach Oahu
+		boolean state;
+		boolean mayFinish;
+		lock.acquire();
+		O_childNum++;
+		if(O_initial&&(O_childNum==2))//The beginning
+		{
+			O_initial=false;
+			O_childQueue.wake();
+			O_childNum--;
+//	Leave Oahu
+			bg.ChildRowToMolokai();
+//	Reach Molokai
+			M_finishNum++;
+			state=false;
+			M_pilotQueue.sleep();
+		}
+		else
+		{
+			if(O_waiting)
+			{
+				O_waitingQueue.wake();
+				O_waiting=false;
+			}
+			state=true;
+			O_childQueue.sleep();
+		}
+		while(true)
+			if(state)//At Oahu
+			{
+				if((O_childNum==1)&&(O_adultNum==0))
+					mayFinish=true;
+				else
+					mayFinish=false;
+				O_childNum--;
+//	Leave Oahu
+				bg.ChildRideToMolokai();
+//	Reach Molokai
+				M_finishNum++;
+				if(mayFinish)
+					finishQueue.wake();//Inform begin()
+				else
+					M_pilotQueue.wake();
+				state=false;
+				M_pilotQueue.sleep();
+			}
+			else//At Molokai
+			{
+				M_finishNum--;
+//	Leave Molokai
+				bg.ChildRowToOahu();
+//	Reach Oahu
+				O_childNum++;
+				if((O_childNum==1)&&(O_adultNum==0))
+				{
+					O_waiting=true;
+					O_waitingQueue.sleep();
+				}
+				if(O_childNum>1)
+				{
+					O_childQueue.wake();
+					O_childNum--;
+//	Leave Oahu
+					bg.ChildRowToMolokai();
+//	Reach Molokai
+					M_finishNum++;
+					state=false;
+					M_pilotQueue.sleep();
+				}
+				else
+				{
+					O_adultQueue.wake();
+					state=true;
+					O_childQueue.sleep();
+				}
+			}
+	}
+	public static void begin(int adults,int children,BoatGrader b)
+	{
+		bg=b;
+		lock=new Lock();
+		finishQueue=new Condition(lock);
+		O_waitingQueue=new Condition(lock);
+		O_adultQueue=new Condition(lock);
+		O_childQueue=new Condition(lock);
+		M_pilotQueue=new Condition(lock);
+		O_initial=true;
+		O_waiting=false;
+		O_adultNum=0;
+		O_childNum=0;
+		M_finishNum=0;
+		lock.acquire();
+		Runnable runnableAdult=new Runnable()
+		{
+			public void run()
+			{
+				AdultItinerary();
+				return;
+			}
+		};
+		for(int f1=0;f1<adults;f1++)
+		{
+			KThread t=new KThread(runnableAdult);
+			t.setName("Adult Boat Thread"+f1);
+			t.fork();
+		}
+		Runnable runnableChild=new Runnable()
+		{
+			public void run()
+			{
+				ChildItinerary();
+				return;
+			}
+		};
+		for(int f1=0;f1<children;f1++)
+		{
+			KThread t=new KThread(runnableChild);
+			t.setName("Child Boat Thread"+f1);
+			t.fork();
+		}
+		finishQueue.sleep();
+		while(M_finishNum<adults+children)
+		{
+			M_pilotQueue.wake();
+			finishQueue.sleep();
+		}
+		lock.release();
+		return;
+	}
 }
