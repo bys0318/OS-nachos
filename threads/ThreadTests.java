@@ -182,7 +182,125 @@ public class ThreadTests {
         new PingTest(2).run();
         new PingTest(3).run();
         System.out.println("communicatorTest3: End!");
-	}
+    }
+    
+    private static class Yielder implements Runnable{
+        public boolean flag = true;
+        public void run(){
+            while (flag)
+                KThread.yield();
+        }
+    }
+
+    // Test the priority
+    public static void PriorityTest1() {
+        System.out.println("Prioirty Queue Test 1: Start");
+        KThread thread1 = new KThread(new Runnable(){
+			public void run(){
+				System.out.println("I'm thread1");
+			}
+		});
+		KThread thread2 = new KThread(new Runnable(){
+			public void run(){
+				System.out.println("I'm thread2");
+			}
+		});
+		KThread thread3 = new KThread(new Runnable(){
+			public void run(){
+				System.out.println("I'm thread3");
+			}
+        });
+        Machine.interrupt().disable();
+		ThreadedKernel.scheduler.setPriority(thread1, 4);
+		ThreadedKernel.scheduler.setPriority(thread2, 3);
+		ThreadedKernel.scheduler.setPriority(thread3, 2);
+        Machine.interrupt().enable();
+        thread3.fork();
+        thread2.fork();
+        thread1.fork();
+        KThread.yield();
+        System.out.println("Priority Queue Test 1: End");
+    }
+
+    // test donate 
+    public static void PriorityTest2() {
+        System.out.println("Priority Queue Test 2: Start");
+        // main thread holds the lock
+        final Lock lock = new Lock();
+        System.out.println("main holds the lock");
+        lock.acquire();
+        KThread thread1 = new KThread(new Runnable(){
+            public void run(){
+                System.out.println("thread1 wants the lock");
+                lock.acquire();
+                System.out.println("thread1 gets the lock");
+                lock.release();
+            }
+        });
+        Yielder yielder = new Yielder();
+        KThread thread2 = new KThread(yielder);
+        Machine.interrupt().disable();
+		ThreadedKernel.scheduler.setPriority(thread1, 3);
+		ThreadedKernel.scheduler.setPriority(thread2, 2);
+        Machine.interrupt().enable();
+        thread1.fork();
+        thread2.fork();
+        // only if it donate can main keep running and not blocked by thread2
+        KThread.yield();
+        System.out.println("main releases the lock");
+        lock.release();
+        yielder.flag = false; // stop yielding
+        KThread.yield();
+        System.out.println("Priority Queue Test 2: End");
+    }
+
+    public static void PriorityTest3() {
+        System.out.println("Priority Queue TEST 3: START");
+		final Lock mainlock = new Lock();
+		final Lock smalllock = new Lock();
+		final Lock smalllock2 = new Lock();
+		smalllock.acquire();
+		smalllock2.acquire();
+		KThread thread1 = new KThread(new Runnable(){
+			public void run(){
+				System.out.println("Important thread wants the lock");
+				mainlock.acquire();
+				System.out.println("Important thread got what it wanted");
+				mainlock.release();
+				smalllock2.acquire();
+				smalllock2.release();
+			}
+		});
+		Yielder yielder = new Yielder();
+		KThread thread2 = new KThread(yielder);
+		KThread thread3 = new KThread(new Runnable(){
+			public void run(){
+				System.out.println("I am thread 3 and hold the lock");
+				mainlock.acquire();
+				smalllock.acquire();
+				smalllock.release();
+				System.out.println("I am thread 3 and release the lock");
+				mainlock.release();
+				KThread.yield();
+				System.out.println("I am thread 3");
+			}
+		});
+		Machine.interrupt().disable();
+		ThreadedKernel.scheduler.setPriority(thread1, 4);
+		ThreadedKernel.scheduler.setPriority(thread2, 3);
+		ThreadedKernel.scheduler.setPriority(thread3, 2);
+		Machine.interrupt().enable();
+		thread3.fork();
+		KThread.yield();
+		smalllock.release();
+		thread2.fork();
+		thread1.fork();
+		KThread.yield();
+		smalllock2.release();
+		yielder.flag = false;
+		KThread.yield();
+		System.out.println("Priority Queue TEST 3: END");
+    }
 
 //	test boat with at least 2 children
 	public static void boatTest()
