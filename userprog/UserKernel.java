@@ -33,20 +33,20 @@ public class UserKernel extends ThreadedKernel {
      * Test the console device.
      */	
     public void selfTest() {
-	super.selfTest();
+        super.selfTest();
+        
+        System.out.println("Testing the console device. Typed characters");
+        System.out.println("will be echoed until q is typed.");
 
-	System.out.println("Testing the console device. Typed characters");
-	System.out.println("will be echoed until q is typed.");
+        char c;
 
-	char c;
-
-	do {
-	    c = (char) console.readByte(true);
-	    console.writeByte(c);
-	}
-	while (c != 'q');
-
-	System.out.println("");
+        do {
+            c = (char) console.readByte(true);
+            console.writeByte(c);
+        }
+        while (c != 'q');
+        System.out.println("");
+        
     }
 
     /**
@@ -94,7 +94,8 @@ public class UserKernel extends ThreadedKernel {
 
 	UserProcess process = UserProcess.newUserProcess();
 	
-	String shellProgram = Machine.getShellProgramName();	
+    String shellProgram = Machine.getShellProgramName();
+    System.out.println(shellProgram);
 	Lib.assertTrue(process.execute(shellProgram, new String[] { }));
 
 	KThread.currentThread().finish();

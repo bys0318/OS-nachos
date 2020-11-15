@@ -412,7 +412,6 @@ public class KThread {
      */
     public static void selfTest() {
         Lib.debug(dbgThread, "Enter KThread.selfTest");
-        ThreadTests.communicatorTest3();
     }
 
     private static final char dbgThread = 't';
