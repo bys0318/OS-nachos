@@ -68,8 +68,8 @@ public class UserProcess {
         pID = counter++;
         processNum++;
         Machine.interrupt().restore(intStatus);
-        descripters = new OpenFile[16];
-        for (int i = 0; i < 16; ++i) descripters[i] = null;
+        descripters = new OpenFile[18];
+        for (int i = 0; i < 18; ++i) descripters[i] = null;
         descripters[0] = UserKernel.console.openForReading();
         descripters[1] = UserKernel.console.openForWriting();
     }
@@ -367,7 +367,7 @@ public class UserProcess {
      * Release any resources allocated by <tt>loadSections()</tt>.
      */
     protected void unloadSections() {
-        for (int i = 0; i < 16; ++i) 
+        for (int i = 0; i < 18; ++i) 
             if (descripters[i] != null) {
                 descripters[i].close();
                 descripters[i] = null;
@@ -408,7 +408,7 @@ public class UserProcess {
     }
 
     private int avail_des() {
-        for (int i = 2; i < 16; ++i) if (descripters[i] == null) return i;
+        for (int i = 2; i < 18; ++i) if (descripters[i] == null) return i;
         return -1;
     }
     /**
@@ -492,7 +492,7 @@ public class UserProcess {
         if (name == null) return -1;
         boolean succ = UserKernel.fileSystem.remove(name);
         if (succ) {
-            for (int i = 0; i < 16; ++i) {
+            for (int i = 0; i < 18; ++i) {
                 if (descripters[i] == null) continue;
                 if (descripters[i].getName().equals(name)) descripters[i] = null;
             }
