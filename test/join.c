@@ -1,8 +1,7 @@
 /*
- * join.c
+ * join1.c
  *
- * Simple program for testing join.  
- * After exec-ing the child, it
+ * Simple program for testing join.  After exec-ing the child, it
  * waits for the child to exit.
  *
  */
@@ -13,11 +12,11 @@ int main (int argc, char *argv[]){
     char *prog = "exit.coff";
     int pid, r, status = 0;
 
-    printf("execing %s...\n", prog);
+    printf("exec %s...\n", prog);
     pid = exec(prog, 0, 0);
     if (pid > 0){
 	    printf("...passed\n");
-    }
+    } 
     else{
         printf("...failed (pid = %d)\n", pid); 
         exit(-1);
@@ -26,14 +25,14 @@ int main (int argc, char *argv[]){
     printf("joining %d...\n", pid);
     r = join(pid, &status);
     if (r > 0){
-	    printf ("...passed (status from child = %d)\n", status);
+	    printf("...passed (status from child = %d)\n", status);
     } 
     else if (r == 0){
-        printf ("...child exited with unhandled exception\n");
+        printf("...child exited with unhandled exception\n");
         exit(-1);
     } 
     else{
-        printf ("...failed (r = %d)\n", r);
+        printf("...failed (r = %d)\n", r);
         exit(-1);
     }
 
