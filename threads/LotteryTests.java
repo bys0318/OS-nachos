@@ -126,18 +126,42 @@ public class LotteryTests {
 	}
 
 	public static void testsetpriority() {
-		final KThread thread = new KThread(new Runnable(){
+		System.out.println("Lottery Test #3: Start");
+		final Lock lock = new Lock();
+		final KThread Thread1 = new KThread(new Runnable() {
 			public void run() {
-				System.out.println("This is a test thread");
+				lock.acquire();
+				for (int i = 0; i < 10; ++i) {
+					Machine.interrupt().disable();
+					ThreadedKernel.scheduler.decreasePriority();
+					System.out.println("Thread1 Current Priority = " + ThreadedKernel.scheduler.getPriority());
+					Machine.interrupt().enable();
+				}
+				lock.release();
 			}
-        });
-        System.out.println("Lottery Test #3: Start");
+		});
+
+		final KThread Thread2 = new KThread(new Runnable() {
+			public void run() {
+				lock.acquire();
+				for (int i = 0; i < 10; ++i) {
+					Machine.interrupt().disable();
+					ThreadedKernel.scheduler.increasePriority();
+					System.out.println("Thread2 Current Priority = " + ThreadedKernel.scheduler.getPriority());
+					Machine.interrupt().enable();
+				}
+				lock.release();
+			}
+		});
 		Machine.interrupt().disable();
-		ThreadedKernel.scheduler.setPriority(thread, 40);
-		ThreadedKernel.scheduler.increasePriority();
-		ThreadedKernel.scheduler.decreasePriority();
+		ThreadedKernel.scheduler.setPriority(Thread1, 5);
+		ThreadedKernel.scheduler.setPriority(Thread2, Integer.MAX_VALUE - 5);
 		Machine.interrupt().enable();
-        thread.fork();
-        System.out.println("Lottery Test #3: End");
+
+		Thread1.fork();
+		Thread2.fork();
+
+		ThreadedKernel.alarm.waitUntil(100000);
+		System.out.println("Lottery Test #3: End");
 	}
 }
