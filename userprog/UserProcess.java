@@ -25,8 +25,7 @@ public class UserProcess {
 		int ppn;
 		for(ppn=0;UserKernel.usedMemory[ppn];ppn++)
 			continue;
-        UserKernel.usedMemory[ppn]=true;
-        // System.out.println("vpn="+vpn+" ppn="+ppn);
+		UserKernel.usedMemory[ppn]=true;
 		pageTable[numEntry++]=new TranslationEntry(vpn,ppn,true,false,false,false);
 		return;
 	}
@@ -376,7 +375,6 @@ public class UserProcess {
         for(int f1 = 0; f1 < numEntry; f1++)
             {
                 UserKernel.usedMemory[pageTable[f1].ppn] = false;
-                // System.out.println("Free ppn="+pageTable[f1].ppn);
                 pageTable[f1] = new TranslationEntry(pageTable[f1].vpn, 0, false, false, false, false);
             }
         Machine.interrupt().restore(intStatus);
@@ -491,12 +489,13 @@ public class UserProcess {
         String name = readVirtualMemoryString(address, 256);
         if (name == null) return -1;
         boolean succ = UserKernel.fileSystem.remove(name);
-        if (succ) {
+        // Prof. Xu thinks we do not need to remove the descripter though it may leads to error
+        /*if (succ) { 
             for (int i = 0; i < 16; ++i) {
                 if (descripters[i] == null) continue;
                 if (descripters[i].getName().equals(name)) descripters[i] = null;
             }
-        }
+        }*/
         return succ ? 0 : -1;
     }
     
