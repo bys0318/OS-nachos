@@ -12,7 +12,7 @@ public class UserKernel extends ThreadedKernel {
      * Allocate a new user kernel.
      */
     public UserKernel() {
-	super();
+	    super();
     }
 
     /**
@@ -20,13 +20,13 @@ public class UserKernel extends ThreadedKernel {
      * processor's exception handler.
      */
     public void initialize(String[] args) {
-	super.initialize(args);
-
-	console = new SynchConsole(Machine.console());
-	
-	Machine.processor().setExceptionHandler(new Runnable() {
-		public void run() { exceptionHandler(); }
-	    });
+        super.initialize(args);
+		int numPhysPages=Machine.processor().getNumPhysPages();
+		usedMemory=new boolean[numPhysPages];
+		for(int f1=0;f1<numPhysPages;f1++)
+			usedMemory[f1]=false;
+		console=new SynchConsole(Machine.console());
+		Machine.processor().setExceptionHandler(new Runnable(){public void run(){exceptionHandler();}});
     }
 
     /**
@@ -37,7 +37,7 @@ public class UserKernel extends ThreadedKernel {
         
         System.out.println("Testing the console device. Typed characters");
         System.out.println("will be echoed until q is typed.");
-
+        
         char c;
 
         do {
@@ -55,10 +55,10 @@ public class UserKernel extends ThreadedKernel {
      * @return	the current process, or <tt>null</tt> if no process is current.
      */
     public static UserProcess currentProcess() {
-	if (!(KThread.currentThread() instanceof UThread))
-	    return null;
-	
-	return ((UThread) KThread.currentThread()).process;
+        if (!(KThread.currentThread() instanceof UThread))
+            return null;
+        
+        return ((UThread) KThread.currentThread()).process;
     }
 
     /**
@@ -75,11 +75,11 @@ public class UserKernel extends ThreadedKernel {
      * that caused the exception.
      */
     public void exceptionHandler() {
-	Lib.assertTrue(KThread.currentThread() instanceof UThread);
+        Lib.assertTrue(KThread.currentThread() instanceof UThread);
 
-	UserProcess process = ((UThread) KThread.currentThread()).process;
-	int cause = Machine.processor().readRegister(Processor.regCause);
-	process.handleException(cause);
+        UserProcess process = ((UThread) KThread.currentThread()).process;
+        int cause = Machine.processor().readRegister(Processor.regCause);
+        process.handleException(cause);
     }
 
     /**
@@ -90,22 +90,22 @@ public class UserKernel extends ThreadedKernel {
      * @see	nachos.machine.Machine#getShellProgramName
      */
     public void run() {
-	super.run();
+        super.run();
 
-	UserProcess process = UserProcess.newUserProcess();
-	
-    String shellProgram = Machine.getShellProgramName();
-    System.out.println(shellProgram);
-	Lib.assertTrue(process.execute(shellProgram, new String[] { }));
+        UserProcess process = UserProcess.newUserProcess();
+        
+        String shellProgram = Machine.getShellProgramName();
+        System.out.println(shellProgram);
+        Lib.assertTrue(process.execute(shellProgram, new String[] { }));
 
-	KThread.currentThread().finish();
+        KThread.currentThread().finish();
     }
 
     /**
      * Terminate this kernel. Never returns.
      */
     public void terminate() {
-	super.terminate();
+	    super.terminate();
     }
 
     /** Globally accessible reference to the synchronized console. */
@@ -113,4 +113,5 @@ public class UserKernel extends ThreadedKernel {
 
     // dummy variables to make javac smarter
     private static Coff dummy1 = null;
+    public static boolean[] usedMemory;
 }
