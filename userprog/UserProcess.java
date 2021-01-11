@@ -567,15 +567,15 @@ public class UserProcess {
         statusLock.release();
         if (status == null){
             Lib.debug(dbgProcess, "handleJoin(): No sign of exit from the child process!");
-			return 0;
+			return 1;
         }
         else{
 			int length = writeVirtualMemory(statusPtr, Lib.bytesFromInt(status));
 			if (length != 4){
                 Lib.debug(dbgProcess, "handleJoin(): Invalid exit status of child process!");
-				return 0;
+				return 1;
             }
-			return 1;
+			return 0;
 		}
     }
 
