@@ -543,7 +543,7 @@ public class UserProcess {
     private int handleJoin(int ID, int statusPtr){
         if (ID < 0 || statusPtr < 0){
             Lib.debug(dbgProcess, "handleJoin(): Invalid arguments!");
-			return -1;
+			return 1;
         }
         // find the child process with ID
         UserProcess child = null;
@@ -556,7 +556,7 @@ public class UserProcess {
         }
 		if (child == null){
             Lib.debug(dbgProcess, "handleJoin(): Invalid process ID!");
-			return -1;
+			return 1;
         }
         child.parent = null;
         children.remove(child);
